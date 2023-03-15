@@ -2,7 +2,7 @@ const mysql = require("mysql");
 require("dotenv").config();
 
 const connectDb = async ({ host, user, password, database }) => {
-	const connection = mysql.createConnection({
+	const connection = await mysql.createConnection({
 		host,
 		user,
 		password,
@@ -13,8 +13,8 @@ const connectDb = async ({ host, user, password, database }) => {
 };
 
 const runQuery = async (connection, query) => {
-	return new Promise((resolve, reject) => {
-		connection.query(query, (error, result) => {
+	return new Promise(async (resolve, reject) => {
+		await connection.query(query, (error, result) => {
 			if (error) reject(error), console.log(error);
 			resolve(result);
 		});
@@ -22,24 +22,22 @@ const runQuery = async (connection, query) => {
 };
 
 const unifyData = async (data, newConnection, serviceId) => {
-	return new Promise(async (resolve, reject) => {
-		for (const index in data) {
-			const query = `SELECT BIN_TO_UUID(id) as id, p.articleId FROM products p WHERE p.articleId = ${data[index].origin_id} LIMIT 1`;
-			setTimeout(async () => {
-				const resultProduct = await runQuery(newConnection, query);
-				if (resultProduct && resultProduct[0]) {
+	for (const index in data) {
+		const query = `SELECT BIN_TO_UUID(id) as id, p.articleId FROM products p WHERE p.articleId = ${data[index].origin_id} LIMIT 1`;
+		setTimeout(async () => {
+			const resultProduct = await runQuery(newConnection, query);
+			if (resultProduct && resultProduct[0]) {
+				const insert = `INSERT INTO relations (productId,serviceId,destinationProductId,erpId,coeficientStock, coeficientPrice) VALUES (uuid_to_bin('${resultProduct[0].id}'), uuid_to_bin('${serviceId}'), '${data[index].destination_id}', '${resultProduct[0].articleId}',${data[index].coeficiente_stk}, ${data[index].coeficiente})`;
 
-					const query = `INSERT INTO relations (productId,serviceId,destinationProductId,erpId,coeficientStock, coeficientPrice) VALUES (uuid_to_bin(${resultProduct[0].id}), uuid_to_bin(${serviceId}), ${data[oldElement].destination_id}, ${resultProduct[0].articleId},${data[oldElement].coeficiente_stk}, ${data[oldElement].coeficiente})`;
-
-					const resultInsert = await runQuery(newConnection, query);
-					if (resultInsert) {
-						console.log(`Relacion insertada correctamente: ${data[index].destination_id} - product Id ${resultProduct[0].id}`)
-					}
+				const resultInsert = await runQuery(newConnection, insert);
+				if (resultInsert) {
+					console.log(
+						`Relacion insertada correctamente: ${data[index].destination_id} - product Id ${resultProduct[0].id}`,
+					);
 				}
-			}, 1000);
-		}
-		resolve(data);
-	});
+			}
+		}, 1000);
+	}
 };
 
 module.exports = {
