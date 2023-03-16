@@ -34,7 +34,11 @@ const unifyData = async (data, newConnection, serviceId) => {
 					console.log(
 						`Relacion insertada correctamente: ${data[index].destination_id} - product Id ${resultProduct[0].id}`,
 					);
+				} else {
+					console.log(`Error al momento de inserta la relacion: ${data[index].destination_id} - product Id ${resultProduct[0].id}`);
 				}
+			} else {
+				console.log(`Error al momento de inserta la relacion de: ${data[index].destination_id} - El art ID: ${data[index].origin_id} no existe`);
 			}
 		}, 1000);
 	}
